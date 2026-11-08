@@ -1,0 +1,27 @@
+# Node / Vite
+node_modules/
+dist/
+.vite/
+
+# Godot cache and imported resources (if used in future)
+.godot/
+.import/
+
+# Build and temporary output
+build/
+.export/
+*.tmp
+*.temp
+*.log
+
+# IDE and local workspace settings
+.vscode/
+.idea/
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# OS and editor swap files
+*.swp
+*.swo
+*~
