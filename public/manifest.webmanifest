@@ -1,0 +1,11 @@
+{
+  "name": "Far Horizon",
+  "short_name": "Far Horizon",
+  "description": "2D space civilization sandbox — browser-first game prototype",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#080d15",
+  "theme_color": "#080d15"
+}
