@@ -1,4 +1,53 @@
 const TAU = Math.PI * 2;
+
+function drawGenerationArk(ctx) {
+  // Amber twin-engine glow distinguishes the ship's stern from the broad ark bow.
+  ctx.save();
+  ctx.shadowColor = '#ffb86e';
+  ctx.shadowBlur = 5;
+  ctx.fillStyle = 'rgba(255,184,110,.72)';
+  ctx.beginPath();
+  ctx.ellipse(-13.5, -3.2, 3.8, 1.15, 0, 0, TAU);
+  ctx.ellipse(-13.5, 3.2, 3.8, 1.15, 0, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+
+  // A broad forward hull and three linked habitat decks form the generation-ship silhouette.
+  ctx.beginPath();
+  ctx.moveTo(-12, -2.7);
+  ctx.lineTo(6, -3.8);
+  ctx.lineTo(11, -3.4);
+  ctx.lineTo(15, 0);
+  ctx.lineTo(11, 3.4);
+  ctx.lineTo(6, 3.8);
+  ctx.lineTo(-12, 2.7);
+  ctx.closePath();
+  ctx.fillStyle = '#263e4a';
+  ctx.strokeStyle = '#91c5c8';
+  ctx.lineWidth = 1;
+  ctx.fill();
+  ctx.stroke();
+
+  for (const x of [-7, -1, 5]) {
+    ctx.fillStyle = '#456674';
+    ctx.fillRect(x - 2, -3.1, 4, 6.2);
+    ctx.fillStyle = '#70d8d1';
+    ctx.fillRect(x - 1.25, -2.1, 2.5, 0.9);
+    ctx.fillRect(x - 1.25, 1.2, 2.5, 0.9);
+  }
+
+  ctx.fillStyle = '#8bded7';
+  ctx.fillRect(-12, -4.1, 2, 1.4);
+  ctx.fillRect(-12, 2.7, 2, 1.4);
+  ctx.fillStyle = '#c4e8df';
+  ctx.beginPath();
+  ctx.moveTo(11, -2.3);
+  ctx.lineTo(14, 0);
+  ctx.lineTo(11, 2.3);
+  ctx.closePath();
+  ctx.fill();
+}
+
 export function createMapRenderer(canvas, onSelect) {
   const ctx = canvas.getContext('2d', { alpha: false });
   let state;
@@ -92,14 +141,7 @@ export function createMapRenderer(canvas, onSelect) {
     ctx.save();
     ctx.translate(ship.x + 19, ship.y - 17);
     ctx.rotate(-Math.PI / 4);
-    ctx.beginPath();
-    ctx.moveTo(0, -7);
-    ctx.lineTo(5, 6);
-    ctx.lineTo(0, 3);
-    ctx.lineTo(-5, 6);
-    ctx.closePath();
-    ctx.fillStyle = '#79d8d1';
-    ctx.fill();
+    drawGenerationArk(ctx);
     ctx.restore();
     ctx.textAlign = 'left';
     ctx.font = '9px Inter, system-ui, sans-serif';
