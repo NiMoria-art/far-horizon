@@ -8,6 +8,7 @@ import { TUTORIAL_TASKS } from '../src/tutorial/tutorialData.js';
 import { getTutorialTaskStatus, normalizeTutorialProgress } from '../src/tutorial/tutorialProgress.js';
 import { loadTutorialProgress, saveTutorialProgress, TUTORIAL_SAVE_KEY } from '../src/tutorial/tutorialStorage.js';
 import { getEosTutorialMessage } from '../src/tutorial/eosMessages.js';
+import { detectDeviceContext, formatTutorialInstruction } from '../src/ui/deviceContext.js';
 
 function memoryStorage() {
   const items = new Map();
@@ -27,6 +28,24 @@ test('tutorial starts independently and persists its first task', () => {
   assert.equal(manager.getSnapshot().task.id, 'welcome');
   assert.equal(loadTutorialProgress(storage).currentTaskId, 'welcome');
   assert.equal(storage.items.has(TUTORIAL_SAVE_KEY), true);
+});
+
+test('tutorial detects touch phones and pointer computers without sending device data', () => {
+  const phone = detectDeviceContext({
+    navigator: { userAgent: 'Mozilla/5.0 (Linux; Android 15; Pixel 8) Mobile', maxTouchPoints: 5 },
+    viewportWidth: 412,
+    matchMedia: (query) => ({ matches: query === '(pointer: coarse)' || query === '(max-width: 760px)' }),
+  });
+  const computer = detectDeviceContext({
+    navigator: { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', maxTouchPoints: 0 },
+    viewportWidth: 1440,
+    matchMedia: () => ({ matches: false }),
+  });
+  assert.equal(phone.deviceLabel, 'ТЕЛЕФОН / ПЛАНШЕТ');
+  assert.equal(formatTutorialInstruction('{{selectPlanet}}', phone.inputMode), 'Коснитесь любой планеты на карте');
+  assert.equal(computer.deviceLabel, 'ПК');
+  assert.equal(formatTutorialInstruction('{{selectPlanet}}', computer.inputMode), 'Щёлкните по любой планете на карте');
+  assert.equal(formatTutorialInstruction('{{wait}}', computer.inputMode), 'Нажмите кнопку «Ожидание 30 дней»');
 });
 
 test('completed older tutorial progress is reopened for the new tab explanations', () => {
