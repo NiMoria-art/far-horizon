@@ -7,6 +7,7 @@ import { createTutorialManager } from '../src/tutorial/tutorialManager.js';
 import { TUTORIAL_TASKS } from '../src/tutorial/tutorialData.js';
 import { getTutorialTaskStatus, normalizeTutorialProgress } from '../src/tutorial/tutorialProgress.js';
 import { loadTutorialProgress, saveTutorialProgress, TUTORIAL_SAVE_KEY } from '../src/tutorial/tutorialStorage.js';
+import { getEosTutorialMessage } from '../src/tutorial/eosMessages.js';
 
 function memoryStorage() {
   const items = new Map();
@@ -28,6 +29,18 @@ test('tutorial starts independently and persists its first task', () => {
   assert.equal(storage.items.has(TUTORIAL_SAVE_KEY), true);
 });
 
+test('completed older tutorial progress is reopened for the new tab explanations', () => {
+  const legacy = normalizeTutorialProgress({
+    version: 1,
+    completed: true,
+    completedTaskIds: ['welcome', 'select-planet', 'open-overview', 'scan-planet', 'scan-star', 'open-journal', 'travel-to-planet', 'open-overview-energy', 'wait-for-energy', 'open-research', 'study-technology', 'discover-system', 'enter-system'],
+  });
+  assert.equal(legacy.version, 2);
+  assert.equal(legacy.completed, false);
+  assert.equal(legacy.currentTaskId, 'system-guide');
+  assert.ok(legacy.completedTaskIds.includes('scan-planet'));
+});
+
 test('tutorial advances only when the current task condition is met', () => {
   const { game, manager, storage } = setup();
   game.emit('tab:opened', { tab: 'overview' });
@@ -35,19 +48,27 @@ test('tutorial advances only when the current task condition is met', () => {
   manager.acknowledge();
   assert.equal(manager.getSnapshot().task.id, 'select-planet');
   game.emit('planet:selected', { planetId: 'vesper' });
-  assert.equal(manager.getSnapshot().task.id, 'open-overview');
+  assert.equal(manager.getSnapshot().task.id, 'system-guide');
   game.emit('tab:opened', { tab: 'research' });
+  assert.equal(manager.getSnapshot().task.id, 'system-guide');
+  manager.acknowledge();
   assert.equal(manager.getSnapshot().task.id, 'open-overview');
   game.emit('tab:opened', { tab: 'overview' });
+  assert.equal(manager.getSnapshot().task.id, 'overview-guide');
+  assert.match(getEosTutorialMessage('overview-guide'), /Поиск сигнала/);
+  assert.match(getEosTutorialMessage('overview-guide'), /Ожидание 30 дней/);
+  manager.acknowledge();
   assert.equal(manager.getSnapshot().task.id, 'scan-planet');
-  assert.equal(manager.getProgress().completedTaskIds.length, 3);
+  assert.equal(manager.getProgress().completedTaskIds.length, 5);
 });
 
 test('a successful real scan completes the scan task; a failed scan does not', () => {
   const { game, manager } = setup();
   manager.acknowledge();
   game.emit('planet:selected', { planetId: 'vesper' });
+  manager.acknowledge();
   game.emit('tab:opened', { tab: 'overview' });
+  manager.acknowledge();
   const engine = createSimulationEngine(game);
   const failed = engine.run('scan', (state, context) => scanPlanet(state, 'missing', context));
   assert.equal(failed.ok, false);
@@ -75,7 +96,9 @@ test('replay presents already satisfied exercises instead of changing the saved 
   manager.restart();
   manager.acknowledge();
   game.emit('planet:selected', { planetId: 'vesper' });
+  manager.acknowledge();
   game.emit('tab:opened', { tab: 'overview' });
+  manager.acknowledge();
   assert.equal(manager.getSnapshot().task.id, 'scan-planet');
   assert.deepEqual(game.state, before);
 });
@@ -131,19 +154,27 @@ test('all lesson actions complete the program in order', () => {
   manager.acknowledge();
   const events = [
     ['planet:selected', { planetId: 'vesper' }],
+    ['ack'],
     ['tab:opened', { tab: 'overview' }],
+    ['ack'],
     ['planet:scanned', { planetId: 'vesper' }],
     ['star:scanned', { systemId: 'helios-9' }],
     ['tab:opened', { tab: 'log' }],
+    ['ack'],
     ['ship:arrived', { destinationId: 'vesper' }],
     ['tab:opened', { tab: 'overview' }],
+    ['ack'],
     ['time:advanced', { source: 'manual-wait', days: 30 }],
     ['tab:opened', { tab: 'research' }],
+    ['ack'],
     ['technology:studied', { technologyId: 'solar' }],
     ['system:discovered', { systemId: 'system-2' }],
     ['system:entered', { systemId: 'system-2' }],
   ];
-  for (const [type, payload] of events) game.emit(type, payload);
+  for (const [type, payload] of events) {
+    if (type === 'ack') manager.acknowledge();
+    else game.emit(type, payload);
+  }
   assert.equal(manager.getProgress().completed, true);
   assert.equal(manager.getSnapshot().task, null);
   assert.equal(manager.getProgress().completedTaskIds.length, TUTORIAL_TASKS.length);
@@ -163,5 +194,5 @@ test('training progress normalizes corrupt and future task IDs without changing 
   const tutorialStorage = memoryStorage();
   saveTutorialProgress(progress, tutorialStorage);
   assert.deepEqual(oldExpedition, before);
-  assert.equal(loadTutorialProgress(tutorialStorage).version, 1);
+  assert.equal(loadTutorialProgress(tutorialStorage).version, 2);
 });

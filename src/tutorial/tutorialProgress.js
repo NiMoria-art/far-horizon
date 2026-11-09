@@ -5,7 +5,7 @@ const uniqueKnown = (items) => [...new Set(Array.isArray(items) ? items.filter((
 
 export function createTutorialProgress(hintsEnabled = true) {
   return {
-    version: 1,
+    version: 2,
     started: true,
     completed: false,
     skipped: false,
@@ -26,15 +26,23 @@ export function normalizeTutorialProgress(value) {
   const completedTaskIds = uniqueKnown(value.completedTaskIds);
   const archivedTaskIds = uniqueKnown(value.archivedTaskIds);
   const skippedTaskIds = uniqueKnown(value.skippedTaskIds).filter((id) => !completedTaskIds.includes(id));
-  const currentTaskId = ids.has(value.currentTaskId) ? value.currentTaskId : null;
+  let currentTaskId = ids.has(value.currentTaskId) ? value.currentTaskId : null;
+  const oldCurriculum = !Number.isSafeInteger(value.version) || value.version < 2;
+  const completed = Boolean(value.completed);
+  const skipped = Boolean(value.skipped);
+  const pendingGuide = oldCurriculum ? TUTORIAL_TASKS.find((item) => item.guide && !completedTaskIds.includes(item.id) && !skippedTaskIds.includes(item.id)) : null;
+  const currentIndex = currentTaskId ? TUTORIAL_TASKS.findIndex((item) => item.id === currentTaskId) : -1;
+  const guideIndex = pendingGuide ? TUTORIAL_TASKS.findIndex((item) => item.id === pendingGuide.id) : -1;
+  const showUpdatedGuide = Boolean(pendingGuide && !skipped && (completed || currentIndex > guideIndex));
+  if (showUpdatedGuide) currentTaskId = pendingGuide.id;
   const task = currentTaskId ? TUTORIAL_TASK_BY_ID.get(currentTaskId) : null;
   const seenHints = Array.isArray(value.seenHints) ? [...new Set(value.seenHints.filter((id) => typeof id === 'string' && id.length < 64))] : [];
-  const finished = Boolean(value.completed || value.skipped);
+  const finished = Boolean((completed && !showUpdatedGuide) || skipped);
   return {
-    version: 1,
+    version: 2,
     started: value.started !== false,
-    completed: Boolean(value.completed),
-    skipped: Boolean(value.skipped),
+    completed: completed && !showUpdatedGuide,
+    skipped,
     replaying: Boolean(value.replaying) && !finished,
     dismissed: Boolean(value.dismissed),
     currentModule: task?.moduleId ?? (TUTORIAL_MODULES.some((module) => module.id === value.currentModule) ? value.currentModule : TUTORIAL_MODULES[0].id),
