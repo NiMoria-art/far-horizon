@@ -1,6 +1,6 @@
 # Состояние проекта
 
-**Текущий этап:** добавлена адаптация подсказок обучения под сенсорное управление и мышь; публикация обновляется.
+**Текущий этап:** обучение распознаёт сенсорное управление и мышь; обновление опубликовано.
 
 ## Готово локально
 
@@ -23,7 +23,7 @@
 
 ## Публикация
 
-Опубликованная версия доступна: [https://nimoria-art.github.io/far-horizon/](https://nimoria-art.github.io/far-horizon/). Обучение с пояснениями вкладок и миграцией прогресса опубликовано в `main` коммитом `29443ab6607ffa5c5bcbcb1861ed8fd564a3fbfb`. Workflow `Deploy Far Horizon Preview to GitHub Pages` завершился успешно: https://github.com/NiMoria-art/far-horizon/actions/runs/42700212741.
+Опубликованная версия доступна: [https://nimoria-art.github.io/far-horizon/](https://nimoria-art.github.io/far-horizon/). Адаптация заданий под сенсорное управление и мышь опубликована в `main` коммитом `a4f7525e6835922d34dd2dbbbf62703e3fdf936e`. Workflow `Deploy Far Horizon Preview to GitHub Pages` завершился успешно: https://github.com/NiMoria-art/far-horizon/actions/runs/42704812567.
 
 ## Этап 5 — обучение игрока
 
@@ -44,6 +44,8 @@
 ## Следующий шаг
 
 Следующий шаг — согласовать модель ресурсов и производства для этапа экономики. Не начинать его без следующей инструкции.
+
+
 
 
 
