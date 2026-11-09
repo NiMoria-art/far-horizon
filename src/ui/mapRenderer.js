@@ -1,13 +1,14 @@
 const TAU = Math.PI * 2;
-const ANGLES = [-2.1, -.92, .42, 2.4, 3.45];
 export function createMapRenderer(canvas, onSelect) {
   const ctx = canvas.getContext('2d', { alpha: false });
   let state;
   let width = 0;
   let height = 0;
   let dpr = 1;
+  function maxOrbit() { return Math.max(1, ...state.system.planets.map((planet) => planet.orbit)); }
   function mapScale() {
-    return Math.max(0.2, Math.min(width / 720, height / 650, (width / 2 - 48) / 310, (height / 2 - 40) / 310));
+    const outerOrbit = maxOrbit();
+    return Math.max(0.01, Math.min(width / 720, height / 650, (width / 2 - 48) / outerOrbit, (height / 2 - 40) / outerOrbit));
   }
   function resize() {
     const rect = canvas.getBoundingClientRect();
@@ -56,7 +57,7 @@ export function createMapRenderer(canvas, onSelect) {
     ctx.fill();
     ctx.shadowBlur = 0;
     state.system.planets.forEach((planet, index) => {
-      const angle = ANGLES[index];
+      const angle = planet.angle ?? (-2.1 + index * (TAU / Math.max(1, state.system.planets.length)));
       const radius = planet.orbit * orbitScale;
       const x = cx + Math.cos(angle) * radius;
       const y = cy + Math.sin(angle) * radius;
@@ -84,7 +85,7 @@ export function createMapRenderer(canvas, onSelect) {
     const shipIndex = state.system.planets.findIndex((planet) => planet.id === state.shipAt);
     let ship = { x: cx, y: cy };
     if (shipIndex >= 0) {
-      const angle = ANGLES[shipIndex];
+      const angle = state.system.planets[shipIndex].angle ?? (-2.1 + shipIndex * (TAU / Math.max(1, state.system.planets.length)));
       const radius = state.system.planets[shipIndex].orbit * orbitScale;
       ship = { x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius };
     }
@@ -103,7 +104,7 @@ export function createMapRenderer(canvas, onSelect) {
     ctx.textAlign = 'left';
     ctx.font = '9px Inter, system-ui, sans-serif';
     ctx.fillStyle = 'rgba(172,198,208,.48)';
-    ctx.fillText('HELIOSECTOR · H-09', 18, height - 17);
+    ctx.fillText(state.system.designation, 18, height - 17);
   }
   function pointer(event) {
     if (!state) return;
@@ -116,7 +117,7 @@ export function createMapRenderer(canvas, onSelect) {
     let nearest = null;
     let distance = 26;
     state.system.planets.forEach((planet, index) => {
-      const angle = ANGLES[index];
+      const angle = planet.angle ?? (-2.1 + index * (TAU / Math.max(1, state.system.planets.length)));
       const dx = x - (cx + Math.cos(angle) * planet.orbit * factor);
       const dy = y - (cy + Math.sin(angle) * planet.orbit * factor);
       const d = Math.hypot(dx, dy);

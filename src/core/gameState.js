@@ -7,8 +7,27 @@ export const initialTechnologies = [
   { id: 'analyzer', name: 'Автономные анализаторы', category: 'Вычислительные технологии', description: 'Приносят на 8 научных данных больше за сканирование.', cost: 40, status: 'available' },
   { id: 'navigation', name: 'Улучшенная навигация', category: 'Двигателестроение', description: 'Снижает стоимость перелётов на 25%.', cost: 35, status: 'available' },
 ];
-export function createNewState() {
-  return { version: 1, system: structuredClone(starSystem), selectedPlanetId: 'vesper', shipAt: 'star', resources: { energy: 100, metals: 120, food: 180, science: 24 }, time: createGameTime(), technologies: structuredClone(initialTechnologies), activeTechnologyId: null, journal: [{ id: crypto.randomUUID(), day: 142, year: 2187, kind: 'system', text: 'Вход в систему H-09. E.O.S. ожидает ваших распоряжений.' }] };
+export function createNewState({ seed = crypto.randomUUID() } = {}) {
+  const system = structuredClone(starSystem);
+  system.planets = structuredClone(planets);
+  system.visited = true;
+  const state = {
+    version: 3,
+    worldSeed: String(seed),
+    systems: [system],
+    currentSystemId: system.id,
+    system,
+    generatedSystemCount: 0,
+    ship: { location: { systemId: system.id, bodyId: 'star' }, maxEnergy: 100, energyRemainder: 0 },
+    selectedPlanetId: 'vesper',
+    shipAt: 'star',
+    resources: { energy: 100, metals: 120, food: 180, science: 24 },
+    time: createGameTime(),
+    technologies: structuredClone(initialTechnologies),
+    activeTechnologyId: null,
+    journal: [{ id: crypto.randomUUID(), day: 142, year: 2187, kind: 'system', text: 'Вход в систему H-09. E.O.S. ожидает ваших распоряжений.' }],
+  };
+  return state;
 }
 export function createGame(initial = createNewState()) {
   const state = initial;
