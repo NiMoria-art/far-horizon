@@ -8,7 +8,7 @@ import { scanEnergyCost, scanPlanet } from '../src/simulation/exploration.js';
 import { travelEnergyCost, travelTo } from '../src/simulation/travel.js';
 import { startResearch } from '../src/simulation/research.js';
 import { clearSave, loadGame, migrateSave, saveGame } from '../src/storage/saveManager.js';
-import { generateStarSystem, SYSTEM_LIMIT } from '../src/world/systemGenerator.js';
+import { generateStarSystem } from '../src/world/systemGenerator.js';
 import { discoverSystem, systemTravelCost, travelToSystem } from '../src/simulation/systemNavigation.js';
 import { energyRecoveryRate, recoverEnergy, shipDistanceAU } from '../src/simulation/energy.js';
 import { scanStar } from '../src/simulation/exploration.js';
@@ -254,18 +254,21 @@ test('planet and star scans reveal characteristics gradually and journal the fin
   assert.equal(game.state.journal[0].kind, 'scan');
 });
 
-test('system discovery uses a deterministic seed, respects the system limit and journals signals', () => {
+test('system discovery continues procedurally beyond four systems with unique deterministic IDs', () => {
   const a = harness();
   const b = harness();
   a.game.state.worldSeed = b.game.state.worldSeed = 'fixed-expedition-seed';
-  assert.equal(a.engine.run('discover', discoverSystem).ok, true);
-  assert.equal(b.engine.run('discover', discoverSystem).ok, true);
-  assert.deepEqual(a.game.state.systems[1], b.game.state.systems[1]);
+  for (let index = 0; index < 8; index += 1) {
+    assert.equal(a.engine.run('discover', discoverSystem).ok, true);
+    assert.equal(b.engine.run('discover', discoverSystem).ok, true);
+    assert.deepEqual(a.game.state.systems[index + 1], b.game.state.systems[index + 1]);
+  }
+  assert.equal(a.game.state.systems.length, 9);
+  assert.equal(a.game.state.generatedSystemCount, 8);
+  assert.equal(new Set(a.game.state.systems.map((system) => system.id)).size, 9);
   assert.equal(a.game.state.systems[1].visited, false);
   assert.equal(a.game.state.systems[1].planets[0].revealed.length, 0);
   assert.equal(a.game.state.journal[0].kind, 'discovery');
-  a.game.state.systems.push(...Array.from({ length: SYSTEM_LIMIT - 2 }, (_, index) => generateStarSystem(`extra-${index}`, { id: `extra-${index}` })));
-  assert.equal(a.engine.run('discover', discoverSystem).ok, false);
 });
 
 test('inter-system travel requires a discovered target and retains system and ship state', () => {

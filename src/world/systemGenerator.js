@@ -35,7 +35,8 @@ function createRandom(seed) {
 function choose(random, values) { return values[Math.floor(random() * values.length)]; }
 
 export function createSystemId(seed) {
-  return `system-${hashSeed(seed).toString(36)}`;
+  const identity = Array.from(String(seed), (character) => character.codePointAt(0).toString(36)).join('-') || 'empty';
+  return `system-${identity}`;
 }
 
 /** Pure seeded world-data generation. It has no dependency on UI or mutable game state. */
@@ -100,7 +101,6 @@ export function generateStarSystem(seed, { planetCount, id } = {}) {
   };
 }
 
-export const SYSTEM_LIMIT = 4;
 export const SYSTEM_DISCOVERY_COST = 10;
 export const SYSTEM_DISCOVERY_DAYS = 30;
 export const INTERSYSTEM_TRAVEL_COST = 35;

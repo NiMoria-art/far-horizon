@@ -1,6 +1,6 @@
 import { spendResources } from './resources.js';
 import { currentSystem, shipDistanceAU } from './energy.js';
-import { generateStarSystem, INTERSYSTEM_TRAVEL_COST, INTERSYSTEM_TRAVEL_DAYS, SYSTEM_DISCOVERY_COST, SYSTEM_DISCOVERY_DAYS, SYSTEM_LIMIT } from '../world/systemGenerator.js';
+import { generateStarSystem, INTERSYSTEM_TRAVEL_COST, INTERSYSTEM_TRAVEL_DAYS, SYSTEM_DISCOVERY_COST, SYSTEM_DISCOVERY_DAYS } from '../world/systemGenerator.js';
 
 function writeJournal(state, kind, text) {
   state.journal.unshift({ id: crypto.randomUUID(), day: state.time.day, year: state.time.year, kind, text });
@@ -8,9 +8,6 @@ function writeJournal(state, kind, text) {
 }
 
 export function discoverSystem(state, { advanceTime, emit }) {
-  if (state.systems.filter((system) => system.discovered && system.id !== 'helios-9').length >= SYSTEM_LIMIT - 1) {
-    return { ok: false, message: 'Все доступные сигналы в текущем секторе уже обследованы.' };
-  }
   if (!spendResources(state, { energy: SYSTEM_DISCOVERY_COST })) return { ok: false, message: 'Недостаточно энергии для поиска сигнала.' };
 
   const sequence = state.generatedSystemCount + 1;

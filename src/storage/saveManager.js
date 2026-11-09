@@ -74,7 +74,7 @@ export function migrateSave(data) {
   state.time = normalizeTime(data.time, defaults.time);
   state.worldSeed = typeof data.worldSeed === 'string' ? data.worldSeed : defaults.worldSeed;
   state.generatedSystemCount = Number.isSafeInteger(data.generatedSystemCount) && data.generatedSystemCount >= 0
-    ? Math.min(data.generatedSystemCount, 3)
+    ? Math.max(data.generatedSystemCount, normalized.filter((system) => system.id !== 'helios-9' && system.discovered).length)
     : Math.max(0, normalized.filter((system) => system.id !== 'helios-9' && system.discovered).length);
   const savedShip = isRecord(data.ship) ? data.ship : {};
   const savedLocation = isRecord(savedShip.location) ? savedShip.location : {};

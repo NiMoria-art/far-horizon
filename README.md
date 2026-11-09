@@ -34,7 +34,7 @@ Tap/click a planet on the 2D map or select it from the system panel. Scanning sp
 
 On narrow screens, use the bottom navigation to switch between overview, system details, technology research, and the expedition log. The Canvas map supports pointer and touch input and resizes with its container.
 
-The expedition can survey up to four nearby systems in the current prototype. System generation is deterministic from the save seed. New system and stellar properties are revealed gradually by observation and scanning. The ship recovers energy as game time advances; the displayed rate depends on stellar luminosity and distance. System discovery, inter-system travel, scanning, and recharge all use the same turn-based game clock. Prototype costs and generation limits are temporary.
+The expedition can discover systems on demand with no hard-coded system count limit. Each signal is generated deterministically from the save seed and sequence. The overview catalog loads entries in pages for a compact interface. New system and stellar properties are revealed gradually by observation and scanning. The ship recovers energy as game time advances; the displayed rate depends on stellar luminosity and distance. System discovery, inter-system travel, scanning, and recharge all use the same turn-based game clock. Prototype costs and generation parameters are temporary.
 
 ## Project structure
 
@@ -43,3 +43,4 @@ Simulation, world data, DOM panels, Canvas rendering, and save storage are separ
 ## Prototype limits
 
 H-09 remains the starting system alongside a small, seeded set of generated systems. This prototype has no large galaxy, passive real-time simulation, production economy, colonies, population simulation, other civilizations, or Android package. Capacitor and offline service workers are not included.
+
