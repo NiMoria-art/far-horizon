@@ -1,8 +1,9 @@
 import { createNewState } from '../core/gameState.js';
 import { DAYS_PER_YEAR } from '../core/gameTime.js';
+import { refreshTechnologyAvailability } from '../simulation/technologyTree.js';
 
 const SAVE_KEY = 'far-horizon.save.v1';
-const PLANET_FIELDS = new Set(['type', 'temperature', 'atmosphere', 'composition', 'research', 'resources']);
+const PLANET_FIELDS = new Set(['type', 'temperature', 'atmosphere', 'composition', 'research', 'resources', 'habitability']);
 const STAR_FIELDS = new Set(['type', 'luminosity', 'radius', 'temperature']);
 
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -19,7 +20,7 @@ function normalizeTime(value, fallback) {
 export function migrateSave(data) {
   if (!isRecord(data)) return null;
   const defaults = createNewState({ seed: typeof data.worldSeed === 'string' ? data.worldSeed : 'far-horizon-legacy-save' });
-  const state = { ...defaults, ...data, version: 3 };
+  const state = { ...defaults, ...data, version: 4 };
   const normalizeSystem = (saved, fallback) => {
     const source = isRecord(saved) ? saved : fallback;
     const planetsValid = Array.isArray(source.planets) && source.planets.length > 0
@@ -29,6 +30,8 @@ export function migrateSave(data) {
       return {
         ...base,
         ...planet,
+        metalReserve: finiteNonNegative(planet.metalReserve) ? planet.metalReserve : (base.metalReserve ?? ((planet.resources ?? []).some((resource) => /железо|металл|никель|редкоземель|кремний|силикат/i.test(resource)) ? 220 : 0)),
+        miningSite: isRecord(planet.miningSite) && finiteNonNegative(planet.miningSite.remaining) ? { active: Boolean(planet.miningSite.active), remaining: planet.miningSite.remaining, fraction: Number.isFinite(planet.miningSite.fraction) && planet.miningSite.fraction >= 0 ? planet.miningSite.fraction % 1 : 0 } : null,
         resources: Array.isArray(planet.resources) ? planet.resources.filter((resource) => typeof resource === 'string') : base.resources ?? [],
         revealed: Array.isArray(planet.revealed) ? [...new Set(planet.revealed.filter((field) => PLANET_FIELDS.has(field)))] : [],
         scanned: Boolean(planet.scanned),
@@ -82,8 +85,13 @@ export function migrateSave(data) {
     location: { systemId: state.currentSystemId, bodyId: data.shipAt ?? 'star', ...savedLocation },
     maxEnergy: finiteNonNegative(savedShip.maxEnergy) && savedShip.maxEnergy > 0 ? savedShip.maxEnergy : 100,
     energyRemainder: Number.isFinite(savedShip.energyRemainder) && savedShip.energyRemainder >= 0 && savedShip.energyRemainder < 1 ? savedShip.energyRemainder : 0,
+    maxMetals: finiteNonNegative(savedShip.maxMetals) && savedShip.maxMetals > 0 ? savedShip.maxMetals : 500,
+    maxFood: finiteNonNegative(savedShip.maxFood) && savedShip.maxFood > 0 ? savedShip.maxFood : 500,
+    foodRemainder: Number.isFinite(savedShip.foodRemainder) && savedShip.foodRemainder > -1 && savedShip.foodRemainder < 1 ? savedShip.foodRemainder : 0,
   };
   state.resources.energy = Math.min(state.resources.energy, state.ship.maxEnergy);
+  state.resources.metals = Math.min(state.resources.metals, state.ship.maxMetals);
+  state.resources.food = Math.min(state.resources.food, state.ship.maxFood);
   const planetIds = new Set(state.system.planets.map((planet) => planet.id));
   state.selectedPlanetId = planetIds.has(data.selectedPlanetId) ? data.selectedPlanetId : defaults.selectedPlanetId;
   state.shipAt = data.shipAt === 'star' || planetIds.has(data.shipAt) ? data.shipAt : defaults.shipAt;
@@ -94,11 +102,14 @@ export function migrateSave(data) {
   state.technologies = defaults.technologies.map((item) => {
     const saved = technologyById.get(item.id);
     const status = ['available', 'researching', 'studied'].includes(saved?.status) ? saved.status : item.status;
-    return saved ? { ...item, ...saved, status } : item;
+    return saved ? { ...item, ...saved, effects:item.effects, prerequisites:item.prerequisites, metalCost:item.metalCost, tier:item.tier, status } : item;
   });
   const knownIds = new Set(state.technologies.map((item) => item.id));
   state.technologies.push(...savedTechnologies.filter((item) => !knownIds.has(item.id)));
   state.activeTechnologyId = state.technologies.some((item) => item.id === data.activeTechnologyId && item.status === 'researching') ? data.activeTechnologyId : null;
+  refreshTechnologyAvailability(state);
+  state.ship.maxEnergy = Math.max(state.ship.maxEnergy,100+state.technologies.filter((item)=>item.status==='studied').reduce((sum,item)=>sum+(item.effects?.energyCapacity??0),0));
+  state.resources.energy = Math.min(state.resources.energy,state.ship.maxEnergy);
 
   state.journal = Array.isArray(data.journal)
     ? data.journal.filter((entry) => isRecord(entry) && typeof entry.text === 'string' && Number.isSafeInteger(entry.day) && Number.isSafeInteger(entry.year))

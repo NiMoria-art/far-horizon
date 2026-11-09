@@ -1,6 +1,7 @@
 import { spendResources } from './resources.js';
 import { currentSystem, shipDistanceAU } from './energy.js';
 import { generateStarSystem, INTERSYSTEM_TRAVEL_COST, INTERSYSTEM_TRAVEL_DAYS, SYSTEM_DISCOVERY_COST, SYSTEM_DISCOVERY_DAYS } from '../world/systemGenerator.js';
+import { technologyBonuses } from './technologyTree.js';
 
 function writeJournal(state, kind, text) {
   state.journal.unshift({ id: crypto.randomUUID(), day: state.time.day, year: state.time.year, kind, text });
@@ -24,14 +25,15 @@ export function discoverSystem(state, { advanceTime, emit }) {
 
 export function systemTravelCost(state, targetSystemId) {
   const target = state.systems.find((system) => system.id === targetSystemId && system.discovered);
-  return target && target.id !== state.currentSystemId ? INTERSYSTEM_TRAVEL_COST : null;
+  return target && target.id !== state.currentSystemId ? Math.max(1,Math.ceil(INTERSYSTEM_TRAVEL_COST*technologyBonuses(state).interTravel*technologyBonuses(state).travelCost)) : null;
 }
 
 export function travelToSystem(state, targetSystemId, { advanceTime, emit }) {
   const target = state.systems.find((system) => system.id === targetSystemId && system.discovered);
   if (!target) return { ok: false, message: 'Система не обнаружена.' };
   if (target.id === state.currentSystemId) return { ok: false, message: 'Корабль уже находится в этой системе.' };
-  if (!spendResources(state, { energy: INTERSYSTEM_TRAVEL_COST })) return { ok: false, message: 'Недостаточно энергии для межсистемного перехода.' };
+  const cost=systemTravelCost(state,targetSystemId);
+  if (!spendResources(state, { energy: cost })) return { ok: false, message: 'Недостаточно энергии для межсистемного перехода.' };
 
   const origin = currentSystem(state);
   const recoveryDistanceAU = shipDistanceAU(state, origin);
@@ -48,5 +50,5 @@ export function travelToSystem(state, targetSystemId, { advanceTime, emit }) {
   state.selectedPlanetId = target.planets[0]?.id ?? null;
   writeJournal(state, 'travel', `Межсистемный переход завершён. Экспедиция прибыла в ${target.name}; обнаружено планет: ${target.planets.length}.`);
   emit('system:entered', { fromSystemId: origin.id, systemId: target.id, planetsDetected: target.planets.length, days: INTERSYSTEM_TRAVEL_DAYS });
-  return { ok: true, message: `Прибытие в ${target.name} · −${INTERSYSTEM_TRAVEL_COST} энергии · ${INTERSYSTEM_TRAVEL_DAYS} дней` };
+  return { ok: true, message: `Прибытие в ${target.name} · −${cost} энергии · ${INTERSYSTEM_TRAVEL_DAYS} дней` };
 }

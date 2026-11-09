@@ -9,6 +9,7 @@ import { scanPlanet, scanStar } from './simulation/exploration.js';
 import { travelTo } from './simulation/travel.js';
 import { startResearch } from './simulation/research.js';
 import { recoverEnergy } from './simulation/energy.js';
+import { advanceEconomy, startMining } from './simulation/economy.js';
 import { discoverSystem, travelToSystem } from './simulation/systemNavigation.js';
 import { createTutorialManager } from './tutorial/tutorialManager.js';
 import { createTutorialPanel } from './ui/tutorialPanel.js';
@@ -29,6 +30,7 @@ const actions={
  travelSystem(id){execute('inter-system-travel',(state,context)=>travelToSystem(state,id,context));},
  advanceTime(days){const result=engine.advanceBy(days,'manual-wait');game.emit('tutorial:action-result',{action:'manual-wait',...result});game.emit('toast',result);},
  research(id){execute('research',(state,context)=>startResearch(state,id,context));},
+ mine(id){execute('mine',(state,context)=>startMining(state,id,context));},
  save(){const ok=saveGame(game.state);game.emit('toast',{message:ok?'Экспедиция сохранена на этом устройстве.':'Не удалось сохранить данные браузера.',ok});},
  reset(){activeRenderer?.destroy();interfaceController?.destroy();tutorialPanel?.destroy();tutorialManager?.destroy();clearSave();game=createGame(createNewState());mount();},
 };
@@ -41,6 +43,7 @@ function execute(action, operation){
 function mount(){
  engine=createSimulationEngine(game,{save:saveGame});
  engine.registerTimeProcessor(recoverEnergy);
+ engine.registerTimeProcessor(advanceEconomy);
  tutorialManager=createTutorialManager(game,{onChange:()=>tutorialPanel?.render()});
  interfaceController=createInterface(root,game,rendererProxy,actions);
  tutorialPanel=createTutorialPanel(root,game,tutorialManager);

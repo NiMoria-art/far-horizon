@@ -79,6 +79,7 @@ export function generateStarSystem(seed, { planetCount, id } = {}) {
       atmosphere,
       composition: giant ? 'Водород, гелий, летучие соединения' : choose(random, ['Силикаты, железо', 'Лёд, аммиак', 'Кремний, металлы', 'Вода, углеродистые породы']),
       resources: choose(random, RESOURCE_SETS),
+      metalReserve: 120 + Math.floor(random() * 381),
       research: choose(random, ['Низкий', 'Средний', 'Высокий']),
       color: choose(random, PALETTE),
       size,

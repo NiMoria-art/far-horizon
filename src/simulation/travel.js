@@ -1,13 +1,14 @@
 import { ACTION_DURATIONS, TRAVEL_ENERGY } from './rules.js';
 import { spendResources } from './resources.js';
 import { currentSystem, shipDistanceAU } from './energy.js';
+import { technologyBonuses } from './technologyTree.js';
 export const travelEnergyCost = (state, destinationId) => {
   const system = currentSystem(state);
-  const tech = state.technologies.find((item) => item.id === 'navigation' && item.status === 'studied');
-  if (destinationId === 'star') return Math.max(1, Math.ceil(TRAVEL_ENERGY.returnToStar * (tech ? 0.75 : 1)));
+  const travelFactor=technologyBonuses(state).travelCost;
+  if (destinationId === 'star') return Math.max(1, Math.ceil(TRAVEL_ENERGY.returnToStar * travelFactor));
   const index = system.planets.findIndex((item) => item.id === destinationId);
   if (index < 0) return null;
-  return Math.max(1, Math.ceil((TRAVEL_ENERGY.base + index * TRAVEL_ENERGY.perOrbit) * (tech ? 0.75 : 1)));
+  return Math.max(1, Math.ceil((TRAVEL_ENERGY.base + index * TRAVEL_ENERGY.perOrbit) * travelFactor));
 };
 
 export function travelTo(state, destinationId, { advanceTime, emit }) {
@@ -16,7 +17,6 @@ export function travelTo(state, destinationId, { advanceTime, emit }) {
   const destinationIndex = destinationId === 'star' ? -1 : system.planets.findIndex((item) => item.id === destinationId);
   const originIndex = state.shipAt === 'star' ? -1 : system.planets.findIndex((item) => item.id === state.shipAt);
   if (destinationIndex < -1 || originIndex < -1 || (state.shipAt !== 'star' && originIndex === -1)) return { ok: false, message: 'Точка перелёта не найдена.' };
-  const tech = state.technologies.find((item) => item.id === 'navigation' && item.status === 'studied');
   const cost = travelEnergyCost(state, destinationId);
   if (cost === null) return { ok: false, message: 'Точка перелёта не найдена.' };
   if (!spendResources(state, { energy: cost })) return { ok: false, message: 'Недостаточно энергии для перелёта.' };

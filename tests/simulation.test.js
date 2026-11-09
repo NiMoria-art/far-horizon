@@ -13,6 +13,8 @@ import { discoverSystem, systemTravelCost, travelToSystem } from '../src/simulat
 import { energyRecoveryRate, recoverEnergy, shipDistanceAU } from '../src/simulation/energy.js';
 import { scanStar } from '../src/simulation/exploration.js';
 import { panelMarkup } from '../src/ui/panels.js';
+import { advanceEconomy, startMining } from '../src/simulation/economy.js';
+import { assessHabitability, PLANET_SCAN_FIELDS } from '../src/world/habitability.js';
 
 function harness(options = {}) {
   const game = createGame(createNewState());
@@ -108,7 +110,7 @@ test('scanning preserves cost and duration, reveals data once, and records event
   assert.equal(game.state.journal[0].kind, 'scan');
   assert.equal(engine.run('scan', (state, context) => scanPlanet(state, cinder.id, context)).ok, true);
   assert.equal(engine.run('scan', (state, context) => scanPlanet(state, cinder.id, context)).ok, true);
-  assert.equal(cinder.revealed.length, 6);
+  assert.equal(cinder.revealed.length, 7);
   const before = structuredClone(game.state);
   assert.equal(engine.run('scan', (state, context) => scanPlanet(state, cinder.id, context)).ok, false);
   assert.deepEqual(game.state, before);
@@ -186,7 +188,7 @@ test('save migration retains v1 progress, safely normalizes dates, and round-tri
     values.set(key, JSON.stringify(oldState));
 
     const loaded = loadGame();
-    assert.equal(loaded.version, 3);
+    assert.equal(loaded.version, 4);
     assert.equal(loaded.resources.energy, 73);
     assert.deepEqual(loaded.time, { year: 2188, day: 1 });
     assert.equal(loaded.shipAt, 'cinder');
@@ -361,11 +363,56 @@ test('save migration preserves v1 H-09 progress and adds v3 world and ship data'
   delete old.ship;
   delete old.generatedSystemCount;
   const restored = migrateSave(old);
-  assert.equal(restored.version, 3);
+  assert.equal(restored.version, 4);
   assert.equal(restored.system.id, 'helios-9');
   assert.equal(restored.systems.length, 1);
   assert.equal(restored.resources.energy, 61);
   assert.equal(restored.ship.location.bodyId, 'vesper');
   assert.ok(restored.system.planets.find((planet) => planet.id === 'vesper').revealed.includes('composition'));
   assert.ok(restored.system.planets.find((planet) => planet.id === 'vesper').resources.length > 0);
+});
+
+test('hydroponics gradually offsets crew food consumption only as game time advances', () => {
+  const {game,engine}=harness({timeProcessors:[]});
+  engine.registerTimeProcessor(advanceEconomy);
+  const before=game.state.resources.food;
+  assert.equal(game.state.ship.foodRemainder,0);
+  engine.advanceBy(100);
+  assert.equal(game.state.resources.food,before+5);
+  assert.ok(game.state.ship.foodRemainder>0&&game.state.ship.foodRemainder<1);
+});
+
+test('scanned metal deposits can be mined gradually and save their finite site state', () => {
+  const {game,engine}=harness({timeProcessors:[advanceEconomy]});
+  const planet=game.state.system.planets.find((item)=>item.id==='cinder');
+  planet.revealed.push('resources'); game.state.shipAt='cinder';
+  const result=engine.run('mine',(state,context)=>startMining(state,'cinder',context));
+  assert.equal(result.ok,true);
+  assert.equal(game.state.resources.metals,102);
+  engine.advanceBy(30);
+  assert.equal(game.state.resources.metals,112);
+  assert.equal(planet.miningSite.remaining,230);
+});
+
+test('technology tree contains five branches of eight projects with prerequisite locks',()=>{
+  const state=createNewState();
+  assert.equal(state.technologies.length,40);
+  assert.equal(new Set(state.technologies.map((tech)=>tech.category)).size,5);
+  assert.equal(state.technologies.filter((tech)=>tech.status==='available').length,5);
+  assert.ok(state.technologies.some((tech)=>tech.status==='locked'&&tech.prerequisites.length));
+});
+
+test('human habitability assessment is withheld until scanned, then reports explainable factors',()=>{
+  const state=createNewState();
+  const planet=state.system.planets.find((item)=>item.id==='vesper');
+  assert.equal(planet.revealed.includes('habitability'),false);
+  const assessment=assessHabitability(planet);
+  assert.ok(assessment.score>=0&&assessment.score<=100);
+  assert.equal(assessment.factors.length,4);
+  assert.ok(PLANET_SCAN_FIELDS.includes('habitability'));
+  const markup=panelMarkup(state,'system');
+  assert.match(markup,/ПРИГОДНОСТЬ ДЛЯ ЧЕЛОВЕЧЕСКОГО ПОСЕЛЕНИЯ/);
+  assert.match(markup,/Неизвестно/);
+  planet.revealed.push('habitability'); planet.habitability=assessment;
+  assert.match(panelMarkup(state,'system'),/Предварительная оценка для людей/);
 });

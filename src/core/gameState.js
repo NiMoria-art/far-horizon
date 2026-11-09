@@ -1,24 +1,20 @@
 import { createEventBus } from './eventBus.js';
 import { createGameTime } from './gameTime.js';
 import { planets, starSystem } from '../world/planet.js';
-
-export const initialTechnologies = [
-  { id: 'solar', name: 'Эффективные солнечные панели', category: 'Энергетика', description: 'Снижают расход энергии на сканирование на 25%.', cost: 30, status: 'available' },
-  { id: 'analyzer', name: 'Автономные анализаторы', category: 'Вычислительные технологии', description: 'Приносят на 8 научных данных больше за сканирование.', cost: 40, status: 'available' },
-  { id: 'navigation', name: 'Улучшенная навигация', category: 'Двигателестроение', description: 'Снижает стоимость перелётов на 25%.', cost: 35, status: 'available' },
-];
+import { initialTechnologies } from '../simulation/technologyTree.js';
+export { initialTechnologies };
 export function createNewState({ seed = crypto.randomUUID() } = {}) {
   const system = structuredClone(starSystem);
   system.planets = structuredClone(planets);
   system.visited = true;
   const state = {
-    version: 3,
+    version: 4,
     worldSeed: String(seed),
     systems: [system],
     currentSystemId: system.id,
     system,
     generatedSystemCount: 0,
-    ship: { location: { systemId: system.id, bodyId: 'star' }, maxEnergy: 100, energyRemainder: 0 },
+    ship: { location: { systemId: system.id, bodyId: 'star' }, maxEnergy: 100, energyRemainder: 0, maxMetals: 500, maxFood: 500, foodRemainder: 0 },
     selectedPlanetId: 'vesper',
     shipAt: 'star',
     resources: { energy: 100, metals: 120, food: 180, science: 24 },
