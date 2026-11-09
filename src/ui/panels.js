@@ -22,6 +22,7 @@ export function panelMarkup(state, activeTab, { visibleSystemCount = 12 } = {}) 
   const value = (field, label) => planet.revealed.includes(field) ? label : 'Неизвестно';
   const scanCost = scanEnergyCost(state);
   const travelCost = travelEnergyCost(state, planet.id);
+  const returnToStarCost = travelEnergyCost(state, 'star');
   const star = state.system.star;
   const starRevealed = star.revealed ?? ['type'];
   const starField = (field, label, value, suffix = '') => `<div><span>${label}</span><b>${starRevealed.includes(field) ? `${value}${suffix}` : 'Неизвестно'}</b></div>`;
@@ -38,6 +39,7 @@ export function panelMarkup(state, activeTab, { visibleSystemCount = 12 } = {}) 
       <div class="stat-list"><div><span>РАДИУС</span><b>${planet.radius.toLocaleString('ru-RU')} км</b></div><div><span>ОРБИТА</span><b>${planet.orbit} млн км</b></div><div><span>ТЕМПЕРАТУРА</span><b>${value('temperature', `${planet.temperature > 0 ? '+' : ''}${planet.temperature} °C`)}</b></div><div><span>АТМОСФЕРА</span><b>${value('atmosphere', planet.atmosphere)}</b></div><div><span>СОСТАВ</span><b>${value('composition', planet.composition)}</b></div><div><span>НАУЧНЫЙ ПОТЕНЦИАЛ</span><b>${value('research', planet.research)}</b></div><div><span>РЕСУРСЫ</span><b>${value('resources', (planet.resources ?? []).join(' · ') || 'Не обнаружены')}</b></div></div>
       <button class="button button-primary button-wide" data-action="scan" ${planet.revealed.length >= 5 || state.resources.energy < scanCost ? 'disabled' : ''}><span>⌁</span> Сканировать объект <small>−${scanCost} ЭН</small></button>
       <button class="button button-secondary button-wide travel-button" data-action="travel" data-destination="${planet.id}" ${state.shipAt === planet.id || state.resources.energy < travelCost ? 'disabled' : ''}><span>↗</span> Перелёт к планете <small>${state.shipAt===planet.id?'КОРАБЛЬ НА ОРБИТЕ':`−${travelCost} ЭН`}</small></button>
+      ${state.shipAt !== 'star' ? `<button class="button button-secondary button-wide travel-button" data-action="travel" data-destination="star" ${state.resources.energy < returnToStarCost ? 'disabled' : ''}><span>↖</span> Возврат к звезде <small>−${returnToStarCost} ЭН</small></button>` : ''}
       <div class="ship-location"><span class="ship-pip"></span> КОРАБЛЬ · ${state.shipAt==='star'?`ОРБИТА ${star.name.toUpperCase()}`:state.system.planets.find(item=>item.id===state.shipAt)?.name.toUpperCase()}</div><div class="recovery-note">ВОССТАНОВЛЕНИЕ · +${recoveryRate.toFixed(2)} ЭН / ДЕНЬ</div>
     </section>
     <section class="panel-section tab-panel ${activeTab === 'research' ? 'is-active' : ''}" data-panel="research"><div class="section-heading"><div><span class="eyebrow">ТЕХНОЛОГИЧЕСКИЙ КОНТУР</span><h2>Развитие</h2></div><span class="research-total">${state.resources.science} ◈</span></div><p class="section-intro">Научные данные экспедиции направляются на отдельные технологические проекты.</p><div class="tech-list">${technologies}</div></section>

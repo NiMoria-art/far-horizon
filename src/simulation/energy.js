@@ -1,6 +1,7 @@
-export const BASE_ENERGY_PER_DAY = 0.04;
+export const BASE_ENERGY_PER_DAY = 0.08;
 export const MINIMUM_STELLAR_DISTANCE_AU = 0.25;
-export const MAX_ENERGY_PER_DAY = 0.12;
+export const MINIMUM_ENERGY_PER_DAY = 0.05;
+export const MAX_ENERGY_PER_DAY = 0.3;
 
 export function currentSystem(state) {
   return state.systems?.find((system) => system.id === state.currentSystemId) ?? state.system;
@@ -15,7 +16,8 @@ export function shipDistanceAU(state, system = currentSystem(state)) {
 export function energyRecoveryRate(state, system = currentSystem(state), distanceAU = shipDistanceAU(state, system)) {
   const luminosity = Number.isFinite(system?.star?.luminosity) && system.star.luminosity > 0 ? system.star.luminosity : 1;
   const distance = Math.max(MINIMUM_STELLAR_DISTANCE_AU, Number.isFinite(distanceAU) ? distanceAU : MINIMUM_STELLAR_DISTANCE_AU);
-  return Math.min(MAX_ENERGY_PER_DAY, BASE_ENERGY_PER_DAY * luminosity / ((distance + MINIMUM_STELLAR_DISTANCE_AU) ** 2));
+  const stellarRate = BASE_ENERGY_PER_DAY * luminosity / ((distance + MINIMUM_STELLAR_DISTANCE_AU) ** 2);
+  return Math.max(MINIMUM_ENERGY_PER_DAY, Math.min(MAX_ENERGY_PER_DAY, stellarRate));
 }
 
 /** A deterministic time processor; fractional energy carries across time steps. */

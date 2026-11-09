@@ -12,6 +12,7 @@ import { generateStarSystem } from '../src/world/systemGenerator.js';
 import { discoverSystem, systemTravelCost, travelToSystem } from '../src/simulation/systemNavigation.js';
 import { energyRecoveryRate, recoverEnergy, shipDistanceAU } from '../src/simulation/energy.js';
 import { scanStar } from '../src/simulation/exploration.js';
+import { panelMarkup } from '../src/ui/panels.js';
 
 function harness(options = {}) {
   const game = createGame(createNewState());
@@ -308,7 +309,7 @@ test('stellar recovery depends on distance and star luminosity, accumulates time
   state.resources.energy = 90;
   let recovered;
   recoverEnergy({ state, days: 20, emit: (_type, payload) => { recovered = payload; }, recoveryDistanceAU: 0.25 });
-  assert.equal(state.resources.energy, 92);
+  assert.equal(state.resources.energy, 96);
   assert.ok(state.ship.energyRemainder >= 0 && state.ship.energyRemainder < 1);
   state.resources.energy = state.ship.maxEnergy - 1;
   recoverEnergy({ state, days: 365, emit() {}, recoveryDistanceAU: 0.25 });
@@ -319,13 +320,32 @@ test('stellar recovery depends on distance and star luminosity, accumulates time
   assert.ok(energyRecoveryRate(state, state.system, 1) > farRate);
 });
 
+test('energy recovery has a positive floor at distant orbits', () => {
+  const state = createNewState({ seed: 'far-orbit-recovery' });
+  const distance = 1e9;
+  assert.equal(energyRecoveryRate(state, state.system, distance), 0.05);
+  state.resources.energy = 0;
+  recoverEnergy({ state, days: 30, emit() {}, recoveryDistanceAU: distance });
+  assert.equal(state.resources.energy, 1);
+  assert.ok(state.ship.energyRemainder > 0);
+});
+
+test('system panel offers an explicit return-to-star action from a planet', () => {
+  const state = createNewState({ seed: 'return-button' });
+  state.shipAt = state.system.planets[0].id;
+  state.selectedPlanetId = state.shipAt;
+  assert.match(panelMarkup(state, 'system'), /data-destination="star"[^>]*>.*Возврат к звезде/s);
+  state.shipAt = 'star';
+  assert.doesNotMatch(panelMarkup(state, 'system'), /Возврат к звезде/);
+});
+
 test('energy recovery runs only through the shared game-time transaction', () => {
   const { game, engine, saved } = harness();
   engine.registerTimeProcessor(recoverEnergy);
   game.state.resources.energy = 90;
   assert.equal(engine.advanceBy(30).ok, true);
   assert.equal(game.state.time.day, 172);
-  assert.equal(game.state.resources.energy, 93);
+  assert.equal(game.state.resources.energy, 99);
   assert.equal(saved.length, 1);
 });
 
