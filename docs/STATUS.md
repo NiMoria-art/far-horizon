@@ -1,6 +1,6 @@
 # Состояние проекта
 
-**Текущий этап:** обучение дополнено пояснениями вкладок; проверка пройдена, обновление готово к публикации.
+**Текущий этап:** обучение дополнено пояснениями вкладок и опубликовано.
 
 ## Готово локально
 
@@ -23,7 +23,7 @@
 
 ## Публикация
 
-Опубликованная версия доступна: [https://nimoria-art.github.io/far-horizon/](https://nimoria-art.github.io/far-horizon/). Возврат к звезде и восстановление энергии без нулевого минимума опубликованы в `main` коммитом `7a6d08ba65390985bb471cc2981d1781e9de3759`. Workflow `Deploy Far Horizon Preview to GitHub Pages` завершился успешно: https://github.com/NiMoria-art/far-horizon/actions/runs/42698367899.
+Опубликованная версия доступна: [https://nimoria-art.github.io/far-horizon/](https://nimoria-art.github.io/far-horizon/). Обучение с пояснениями вкладок и миграцией прогресса опубликовано в `main` коммитом `29443ab6607ffa5c5bcbcb1861ed8fd564a3fbfb`. Workflow `Deploy Far Horizon Preview to GitHub Pages` завершился успешно: https://github.com/NiMoria-art/far-horizon/actions/runs/42700212741.
 
 ## Этап 5 — обучение игрока
 
@@ -44,6 +44,8 @@
 ## Следующий шаг
 
 Следующий шаг — согласовать модель ресурсов и производства для этапа экономики. Не начинать его без следующей инструкции.
+
+
 
 
 
